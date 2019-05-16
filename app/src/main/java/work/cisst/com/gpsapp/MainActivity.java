@@ -46,6 +46,10 @@ public class MainActivity extends AppCompatActivity {
                     UserMapper userMapper = new UserMapper();
                     User user = userMapper.getUserByName(name.getText().toString());
                     //判断密码是否正确
+                    if(user.getId()==null){
+                        Toast.makeText(MainActivity.this,"密码错误！",Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     if (user.getPassword().equals(password.getText().toString())) {
                         Intent intent = new Intent();
                         intent.setClass(MainActivity.this, Map.class);
