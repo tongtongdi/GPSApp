@@ -14,7 +14,7 @@ import java.sql.Statement;
 public class DBOpenHelper {
 
     private static String driver = "com.mysql.jdbc.Driver";
-    private static String url = "jdbc:mysql://192.168.23.2:3306/gps?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true";
+    private static String url = "jdbc:mysql://172.96.225.115:3306/gps?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true";
     private static String user = "root";
     private static String password = "admin";
     //连接数据库
