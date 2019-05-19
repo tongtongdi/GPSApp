@@ -1,13 +1,13 @@
 package work.cisst.com.gpsapp.entity;
 
-import java.util.Date;
+import java.sql.Timestamp;
 
-public class positions {
+public class Positions {
     private int id;
     private int userId;
     private double lng;
     private double lat;
-    private Date time;
+    private Timestamp time;
 
     public int getId() {
         return id;
@@ -41,11 +41,12 @@ public class positions {
         this.lat = lat;
     }
 
-    public Date getTime() {
+
+    public Timestamp getTime() {
         return time;
     }
 
-    public void setTime(Date time) {
+    public void setTime(Timestamp time) {
         this.time = time;
     }
 
