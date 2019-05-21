@@ -31,7 +31,6 @@ public class MainActivity extends AppCompatActivity {
 
         //设置点击登录按钮事件
         findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onClick(View view) {
                 EditText name = (EditText) findViewById(R.id.editText);
