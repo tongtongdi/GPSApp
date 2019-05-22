@@ -30,6 +30,7 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.map.Overlay;
 import com.baidu.mapapi.map.OverlayOptions;
+import com.baidu.mapapi.map.Polyline;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
 
@@ -39,6 +40,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import work.cisst.com.gpsapp.Tool.BDLocationUtils;
@@ -59,12 +62,15 @@ public class Map extends Activity implements View.OnClickListener {
    // MyLocationListenner myListener = new MyLocationListenner();
     MapView mMapView;
     BaiduMap mBaiduMap;
+    List<Positions> positions;
     private TextView btnbegin,btnover;
     private Button btnover2,btnover1;//时间按钮
     private Calendar cal;
+    TimerTask task = null;
+
     private int year,month,day;
     private String beginTime,endTime;
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private int sizePosition = 2; //每次回放便利的大小
 
     // UI相关
     OnCheckedChangeListener radioButtonListener;
@@ -126,15 +132,16 @@ public class Map extends Activity implements View.OnClickListener {
         findViewById(R.id.btnselect).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                mBaiduMap.clear();
                 beginTime = btnbegin.getText().toString() + " " + btnover1.getText().toString()+":"+"00";
                 endTime = btnover.getText().toString() + " " + btnover2.getText().toString()+":"+"00";
                 PositionsMapper positionsMapper = new PositionsMapper();
-                System.out.println(beginTime+":"+endTime+":"+id);
                 List<Positions> list = positionsMapper.getListByTime(beginTime, endTime, id);
+                positions = list;
                 if(list.size()<=0){
                     Toast.makeText(Map.this,"这个时间段内没有定位数据",Toast.LENGTH_LONG).show();
                 }else{
-                    showItbyStype(list);
+                    showItbyStype();
                 }
 
             }
@@ -213,66 +220,60 @@ public class Map extends Activity implements View.OnClickListener {
     }
 
     //获取到的数据，展示出来，按照时间
-    public void showItbyStype(List<Positions> positions) {
-        List<LatLng> points = new ArrayList<LatLng>();
-        List<BitmapDescriptor> textureList = new ArrayList<>();
-        List<Integer> indexList = new ArrayList<>();
-        indexList.add(0);
-        LatLng star = new LatLng(positions.get(0).getLat(), positions.get(0).getLng());
-        points.add(star);
-
-
-        MapStatus.Builder builder = new MapStatus.Builder();
-        builder.target(star).zoom(18.0f);
-        mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
-        BitmapDescriptor bitmap = BitmapDescriptorFactory.fromResource(R.drawable.icon_st);
-        OverlayOptions options = new MarkerOptions()
-                .position(star)
-                .icon(bitmap);
-        mBaiduMap.addOverlay(options);
-
-        Long oldTime = positions.get(0).getTime().getTime();
-        for (int i=1;i<positions.size();i++) {
-            Positions position = positions.get(i);
-            Long time = position.getTime().getTime();
-            System.out.println(position.getTime());
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            oldTime = time;
-            LatLng p1 = new LatLng(position.getLat(), position.getLng());
-            //添加点进去
-            points.add(p1);
-            MapStatus mapStatus = new MapStatus.Builder()
-                    .target(p1)
-                    .zoom(20F)
-                    .build();
-            //设置地图状态变更
-            MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory
-                    .newMapStatus(mapStatus);
-            mBaiduMap.setMapStatus(mapStatusUpdate);
-            //设置折线的属性
-            OverlayOptions mOverlayOptions = new PolylineOptions()
-                    .width(5)
-                    .color(0xAAFF0000)
-                    .points(points);
-            //在地图上绘制折线
-           //mPloyline 折线对象
-            Overlay mPolyline = mBaiduMap.addOverlay(mOverlayOptions);
-            mLocClient.start();
+    public void showItbyStype() {
+        Timer  timer = new Timer();
+        if(task != null){
+            task.cancel();
         }
-        LatLng end = new LatLng(positions.get(positions.size()-1).getLat(), positions.get(positions.size()-1).getLng());
-        MapStatus.Builder builder2 = new MapStatus.Builder();
-        builder.target(end).zoom(18.0f);
-        mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder2.build()));
-        BitmapDescriptor bitmap2 = BitmapDescriptorFactory.fromResource(R.drawable.icon_en);
-        OverlayOptions options2 = new MarkerOptions()
-                .position(end)
-                .icon(bitmap2);
-        mBaiduMap.addOverlay(options2);
-
+        task = new TimerTask() {
+            @Override
+            public synchronized void run() {
+                List<LatLng> points = new ArrayList<LatLng>();
+                List<Integer> indexList = new ArrayList<>();
+                indexList.add(0);
+                LatLng star = new LatLng(positions.get(0).getLat(), positions.get(0).getLng());
+                points.add(star);
+                MapStatus.Builder builder = new MapStatus.Builder();
+                builder.target(star).zoom(18.0f);
+                Long oldTime = positions.get(0).getTime().getTime();
+                LatLng p1 = null;
+                if(sizePosition<=positions.size()) {
+                    for (int i = 1; i < sizePosition; i++) {
+                        mBaiduMap.clear();
+                        Positions position = positions.get(i);
+                        Long time = position.getTime().getTime();
+                        oldTime = time;
+                        p1 = new LatLng(position.getLat(), position.getLng());
+                        //添加点进去
+                        points.add(p1);
+                    }
+                    MapStatus mapStatus = new MapStatus.Builder()
+                            .target(p1)
+                            .zoom(20F)
+                            .build();
+                    //设置地图状态变更
+                    MapStatusUpdate mapStatusUpdate = MapStatusUpdateFactory
+                            .newMapStatus(mapStatus);
+                    mBaiduMap.setMapStatus(mapStatusUpdate);
+                    sizePosition++;
+                    drawLine(points);
+                    BitmapDescriptor bitmap = BitmapDescriptorFactory.fromResource(R.drawable.icon_st);
+                    OverlayOptions options = new MarkerOptions()
+                            .position(star)
+                            .icon(bitmap);
+                    mBaiduMap.addOverlay(options);
+                } else{
+                    LatLng end = new LatLng(positions.get(positions.size() - 1).getLat(), positions.get(positions.size() - 1).getLng());
+                    BitmapDescriptor bitmap2 = BitmapDescriptorFactory.fromResource(R.drawable.icon_en);
+                    OverlayOptions options2 = new MarkerOptions()
+                            .position(end)
+                            .icon(bitmap2);
+                    mBaiduMap.addOverlay(options2);
+                    this.cancel();
+                }
+            }
+        };
+        timer.schedule(task,2,3000);
     }
     //获取当前日期  开始
     private void getbeginDate() {
@@ -288,6 +289,15 @@ public class Map extends Activity implements View.OnClickListener {
         month=cal.get(Calendar.MONTH);   //获取到的月份是从0开始计数
         day=cal.get(Calendar.DAY_OF_MONTH);
     }
+
+
+    private void drawLine( List<LatLng> points) {
+        //在每次画线之前，需要先清除以前画的
+        OverlayOptions ooPolyline = new PolylineOptions().width(5)
+                .color(0xAAFF0000).points(points);
+        mBaiduMap.addOverlay(ooPolyline);
+    }
+
 
 
     @Override
