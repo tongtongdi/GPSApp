@@ -8,6 +8,7 @@ import android.graphics.Point;
 import android.location.Location;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AnalogClock;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.RadioGroup.OnCheckedChangeListener;
@@ -34,6 +35,7 @@ import com.baidu.mapapi.map.Polyline;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
 
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -64,13 +66,18 @@ public class Map extends Activity implements View.OnClickListener {
     BaiduMap mBaiduMap;
     List<Positions> positions;
     private TextView btnbegin,btnover;
+    private TextView textView;
     private Button btnover2,btnover1;//时间按钮
     private Calendar cal;
     TimerTask task = null;
+    TimerTask timerTask = null;
+    //从数据库中拿出来的数据开始时间
+    private Date beginDate;
 
     private int year,month,day;
     private String beginTime,endTime;
     private int sizePosition = 2; //每次回放便利的大小
+    private SimpleDateFormat sdf =new SimpleDateFormat("yyyy-mm-dd  HH:mm:ss");
 
     // UI相关
     OnCheckedChangeListener radioButtonListener;
@@ -126,6 +133,7 @@ public class Map extends Activity implements View.OnClickListener {
         //获取当前日期 开始
         btnover1 = (Button) findViewById(R.id.btnover1);
         btnover1.setOnClickListener(this);
+        textView = (TextView) findViewById(R.id.textView3);
         //获取当前日期 开始
         btnover2 = (Button) findViewById(R.id.btnover2);
         btnover2.setOnClickListener(this);
@@ -141,6 +149,10 @@ public class Map extends Activity implements View.OnClickListener {
                 if(list.size()<=0){
                     Toast.makeText(Map.this,"这个时间段内没有定位数据",Toast.LENGTH_LONG).show();
                 }else{
+                    beginDate = list.get(0).getTime();
+                    Date endDate = list.get(list.size() - 1).getTime();
+                    String show = "回放时间:"+beginDate.toString().substring(0,19) + " -- " + endDate.toString().substring(0,19);
+                    textView.setText(show);
                     showItbyStype();
                 }
 
@@ -243,6 +255,7 @@ public class Map extends Activity implements View.OnClickListener {
                         Positions position = positions.get(i);
                         Long time = position.getTime().getTime();
                         oldTime = time;
+                        Date date = position.getTime();
                         p1 = new LatLng(position.getLat(), position.getLng());
                         //添加点进去
                         points.add(p1);
